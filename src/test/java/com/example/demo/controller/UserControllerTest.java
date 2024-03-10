@@ -1,9 +1,9 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.UserStatus;
-import com.example.demo.model.dto.UserUpdateDto;
-import com.example.demo.repository.UserEntity;
-import com.example.demo.repository.UserRepository;
+import com.example.demo.user.domain.UserStatus;
+import com.example.demo.user.domain.UserUpdate;
+import com.example.demo.user.infrastructure.UserEntity;
+import com.example.demo.user.infrastructure.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,6 @@ import org.springframework.test.context.jdbc.SqlGroup;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -73,6 +72,16 @@ class UserControllerTest {
     }
 
     @Test
+    void 사용자는_인증_코드가_일치하지_않을_경우_권한_없음_에러를_내려준다() throws Exception {
+        // given
+        // when
+        // then
+        mockMvc.perform(get("/api/users/2/verify")
+                        .queryParam("certificationCode", "aaaaaa-aaaa-aaaa-aaaa-aaaaaaac"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void 사용자는_내_정보를_불러올_때_개인정보인_주소도_갖고_올_수_있다() throws Exception {
         // given
         // when
@@ -90,7 +99,7 @@ class UserControllerTest {
     @Test
     void 사용자는_내_정보를_수정할_수_있다() throws Exception {
         // given
-        UserUpdateDto userUpdateDto = UserUpdateDto.builder()
+        UserUpdate userUpdate = UserUpdate.builder()
                 .nickname("nickname")
                 .address("Seoul")
                 .build();
@@ -99,7 +108,7 @@ class UserControllerTest {
         mockMvc.perform(put("/api/users/me")
                         .header("EMAIL", "pakoh200@naver.com")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(userUpdateDto)))
+                        .content(objectMapper.writeValueAsString(userUpdate)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.email").value("pakoh200@naver.com"))

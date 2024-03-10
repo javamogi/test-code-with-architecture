@@ -1,21 +1,17 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.dto.PostCreateDto;
-import com.example.demo.model.dto.UserCreateDto;
+import com.example.demo.post.domain.PostCreate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlGroup;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,7 +33,7 @@ class PostCreateControllerTest {
     @Test
     void 사용자는_게시물을_작성할_수_있다() throws Exception {
         // given
-        PostCreateDto postCreateDto = PostCreateDto.builder()
+        PostCreate postCreate = PostCreate.builder()
                 .writerId(1)
                 .content("helloworld")
                 .build();
@@ -45,7 +41,7 @@ class PostCreateControllerTest {
         // then
         mockMvc.perform(post("/api/posts")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(postCreateDto)))
+                        .content(objectMapper.writeValueAsString(postCreate)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber())
                 .andExpect(jsonPath("$.content").value("helloworld"))
