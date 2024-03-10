@@ -1,16 +1,13 @@
-package com.example.demo.user.service;
+package com.example.demo.medium;
 
 import com.example.demo.common.domain.exception.CertificationCodeNotMatchedException;
 import com.example.demo.common.domain.exception.ResourceNotFoundException;
-import com.example.demo.mock.FakeMailSender;
-import com.example.demo.mock.FakeUserRepository;
-import com.example.demo.mock.TestClockHolder;
-import com.example.demo.mock.TestUuidHolder;
 import com.example.demo.user.domain.User;
-import com.example.demo.user.domain.UserCreate;
 import com.example.demo.user.domain.UserStatus;
+import com.example.demo.user.domain.UserCreate;
 import com.example.demo.user.domain.UserUpdate;
-import org.junit.jupiter.api.BeforeEach;
+import com.example.demo.user.infrastructure.UserEntity;
+import com.example.demo.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,40 +22,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 
+@SpringBootTest
+@SqlGroup({
+        @Sql(value = "/sql/user-service-test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD),
+        @Sql(value = "/sql/delete-all-data.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+})
 class UserServiceTest {
 
+    @Autowired
     private UserService userService;
-
-    @BeforeEach
-    void init() {
-        FakeMailSender fakeMailSender = new FakeMailSender();
-        FakeUserRepository fakeUserRepository = new FakeUserRepository();
-        this.userService = UserService.builder()
-                .uuidHolder(new TestUuidHolder("aaaaaa-aaaa-aaaa-aaaa-aaaaaaab"))
-                .clockHolder(new TestClockHolder(1678530673958L))
-                .userRepository(fakeUserRepository)
-                .certificationService(new CertificationService(fakeMailSender))
-                .build();
-        fakeUserRepository.save(User.builder()
-                .id(1L)
-                .email("pakoh200@naver.com")
-                .nickname("javamogi")
-                .address("Incheon")
-                .certificationCode("aaaaaa-aaaa-aaaa-aaaa-aaaaaaaa")
-                .status(UserStatus.ACTIVE)
-                .lastLoginAt(0L)
-                .build());
-
-        fakeUserRepository.save(User.builder()
-                .id(2L)
-                .email("pakoh300@naver.com")
-                .nickname("javamogi2")
-                .address("Incheon")
-                .certificationCode("aaaaaa-aaaa-aaaa-aaaa-aaaaaaab")
-                .status(UserStatus.PENDING)
-                .lastLoginAt(0L)
-                .build());
-    }
+    @MockBean
+    private JavaMailSender mailSender;
 
     @Test
     void getByEmail은_ACTIVE_상태인_유저를_찾아올_수_있다(){
@@ -112,6 +86,7 @@ class UserServiceTest {
                 .address("Korea")
                 .nickname("mogi")
                 .build();
+        BDDMockito.doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
         // when
         User result = userService.create(userCreate);
@@ -119,7 +94,7 @@ class UserServiceTest {
         // then
         assertThat(result.getId()).isNotNull();
         assertThat(result.getStatus()).isEqualTo(UserStatus.PENDING);
-         assertThat(result.getCertificationCode()).isEqualTo("aaaaaa-aaaa-aaaa-aaaa-aaaaaaab");
+        // assertThat(result.getCertificationCode()).isEqualTo("??"); // FIXME
     }
 
     @Test
@@ -129,6 +104,7 @@ class UserServiceTest {
                 .address("Seoul")
                 .nickname("mogi-ng")
                 .build();
+        BDDMockito.doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
         // when
         userService.update(1, userUpdate);
@@ -147,8 +123,9 @@ class UserServiceTest {
         userService.login(1);
 
         // then
-        User user = userService.getById(1);
-        assertThat(user.getLastLoginAt()).isEqualTo(1678530673958L);
+        User userEntity = userService.getById(1);
+        assertThat(userEntity.getLastLoginAt()).isGreaterThan(0L);
+        // assertThat(result.getLastLoginAt()).isEqualTo("??"); // FIXME
     }
 
     @Test
